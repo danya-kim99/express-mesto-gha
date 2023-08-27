@@ -23,8 +23,7 @@ app.use('/', require('./routes/users'));
 app.use('/', require('./routes/cards'));
 
 app.use((req, res, next) => {
-  const error = new Error('Not found');
-  error.status = 404;
+  res.status(404).send({ message: "Not Found" })
   next(error);
 });
 

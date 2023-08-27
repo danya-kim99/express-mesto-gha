@@ -11,13 +11,19 @@ module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
 
   Card.create({ name, link, owner: req.user._id })
-    .then(card => res.send({card: card._id}))
+    .then(card => res.send({_id: card._id}))
     .catch((err) => res.status(400).send({ message: err.message }))
 };
 
 module.exports.deleteCard = (req, res) => {
   Card.findByIdAndRemove(req.params._id)
-    .then(card => res.send({ data: card }))
+    .then(card => {
+      if (card === null) {
+        res.status(404).send({ message: "Запрашиваемая карточка не найдена" })
+      } else {
+        res.send({ data: card })
+      }
+    })
     .catch((err) => {
       if (err.name = 'CastError') {
         res.status(404).send({ message: "Запрашиваемая карточка не найдена" })
@@ -32,7 +38,13 @@ module.exports.likeCard = (req, res) => {
   { $addToSet: { likes: req.user._id } },
   { new: true },
 )
-.then(card => res.send(card))
+.then(card => {
+  if (card === null) {
+    res.status(404).send({ message: "Запрашиваемая карточка не найдена" })
+  } else {
+    res.send(card)
+  }
+})
 .catch((err) => {
   if (err.name = 'CastError') {
     res.status(404).send({ message: "Запрашиваемая карточка не найдена" })
@@ -47,6 +59,12 @@ module.exports.dislikeCard = (req, res) => {
   { $pull: { likes: req.user._id } },
   { new: true },
 )
-.then(card => res.send(card))
+.then(card => {
+  if (card === null) {
+    res.status(404).send({ message: "Запрашиваемая карточка не найдена" })
+  } else {
+    res.send(card)
+  }
+})
 .catch(() => res.status(400).send({ message: "На сервере произошла ошибка" }))}
 
