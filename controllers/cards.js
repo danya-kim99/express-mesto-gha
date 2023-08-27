@@ -1,4 +1,6 @@
 const Card = require('../models/card');
+const mongoose = require('mongoose');
+const isValidFormat = mongoose.Types.ObjectId.isValid;
 
 module.exports.getCards = (req, res) => {
   Card.find({})
@@ -16,7 +18,10 @@ module.exports.createCard = (req, res) => {
 };
 
 module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params._id)
+  if (!isValidFormat(req.params.cardId)) {
+    res.status(400).send({ message: "Переданный идентификатор карточки некорректен" })
+  }
+  Card.findByIdAndRemove(req.params.cardId)
     .then(card => {
       if (card === null) {
         res.status(404).send({ message: "Запрашиваемая карточка не найдена" })
@@ -33,6 +38,9 @@ module.exports.deleteCard = (req, res) => {
     })}
 
 module.exports.likeCard = (req, res) => {
+  if (!isValidFormat(req.params.cardId)) {
+    res.status(400).send({ message: "Переданный идентификатор карточки некорректен" })
+  }
   Card.findByIdAndUpdate(
   req.params.cardId,
   { $addToSet: { likes: req.user._id } },

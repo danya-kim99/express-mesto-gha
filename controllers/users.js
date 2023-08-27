@@ -1,5 +1,6 @@
-const { request } = require('express');
 const User = require('../models/user');
+const mongoose = require('mongoose');
+const isValidFormat = mongoose.Types.ObjectId.isValid;
 
 module.exports.getUsers = (req, res) => {
   User.find({})
