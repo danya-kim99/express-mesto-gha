@@ -9,8 +9,14 @@ module.exports.getUsers = (req, res) => {
 
 module.exports.getUser = (req, res) => {
   User.findById(req.params.userId)
-    .then(user => res.send(user))
-    .catch((err) => { res.status(404).send({ message: "Запрашиваемый пользователь не найден" }) })
+    .then(user => {
+      if (user === null) {
+        res.status(404).send({ message: "Запрашиваемый пользователь не найден" })
+      } else {
+        res.send(user)
+      }
+    })
+    .catch((err) => { res.status(400).send({ message: err.message}) })
 };
 
 module.exports.createUser = (req, res) => {
@@ -39,7 +45,7 @@ module.exports.patchAvatar = (req, res) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true , runValidators: true})
-    .then(user => res.send(user.avatar))
+    .then(user => res.send({avatar: user.avatar}))
     .catch(() => res.status(400).send({ message: "На сервере произошла ошибка" }))
 };
 

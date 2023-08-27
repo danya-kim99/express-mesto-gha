@@ -11,15 +11,20 @@ module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
 
   Card.create({ name, link, owner: req.user._id })
-    .then(card => res.send(card._id))
+    .then(card => res.send({card: card._id}))
     .catch((err) => res.status(400).send({ message: err.message }))
 };
 
 module.exports.deleteCard = (req, res) => {
   Card.findByIdAndRemove(req.params._id)
     .then(card => res.send({ data: card }))
-    .catch(() => res.status(500).send({ message: "На сервере произошла ошибка" }))
-};
+    .catch((err) => {
+      if (err.name = 'CastError') {
+        res.status(404).send({ message: "Запрашиваемая карточка не найдена" })
+      } else {
+        res.status(400).send({ message: "На сервере произошла ошибка" })
+      }
+    })}
 
 module.exports.likeCard = (req, res) => {
   Card.findByIdAndUpdate(
@@ -28,7 +33,13 @@ module.exports.likeCard = (req, res) => {
   { new: true },
 )
 .then(card => res.send(card))
-.catch(() => res.status(500).send({ message: "На сервере произошла ошибка" }))}
+.catch((err) => {
+  if (err.name = 'CastError') {
+    res.status(404).send({ message: "Запрашиваемая карточка не найдена" })
+  } else {
+    res.status(400).send({ message: "На сервере произошла ошибка" })
+  }
+})}
 
 module.exports.dislikeCard = (req, res) => {
   Card.findByIdAndUpdate(
@@ -37,5 +48,5 @@ module.exports.dislikeCard = (req, res) => {
   { new: true },
 )
 .then(card => res.send(card))
-.catch(() => res.status(500).send({ message: "На сервере произошла ошибка" }))}
+.catch(() => res.status(400).send({ message: "На сервере произошла ошибка" }))}
 
