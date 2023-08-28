@@ -15,7 +15,11 @@ module.exports.createCard = (req, res) => {
 
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(201).send({ _id: card._id }))
-    .catch((err) => res.status(400).send({ message: err.message }));
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        res.status(400).send({ message: 'Ошибка валидации, неправильный формат параметров' });
+      } else { res.status(500).send({ message: 'На сервере произошла ошибка' }); }
+    });
 };
 
 module.exports.deleteCard = (req, res) => {
@@ -23,18 +27,15 @@ module.exports.deleteCard = (req, res) => {
     res.status(400).send({ message: 'Переданный идентификатор карточки некорректен' });
   }
   Card.findByIdAndRemove(req.params.cardId)
+    .orFail(new Error('Запрашиваемая карточка не найдена'))
     .then((card) => {
-      if (card === null) {
-        res.status(404).send({ message: 'Запрашиваемая карточка не найдена' });
-      } else {
-        res.send({ data: card });
-      }
+      res.send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Запрашиваемая карточка не найдена' });
       } else {
-        res.status(400).send({ message: 'На сервере произошла ошибка' });
+        res.status(500).send({ message: 'На сервере произошла ошибка' });
       }
     });
 };
@@ -48,18 +49,15 @@ module.exports.likeCard = (req, res) => {
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
+    .orFail(new Error('Запрашиваемая карточка не найдена'))
     .then((card) => {
-      if (card === null) {
-        res.status(404).send({ message: 'Запрашиваемая карточка не найдена' });
-      } else {
-        res.send(card);
-      }
+      res.send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(400).send({ message: 'Запрашиваемая карточка не найдена' });
       } else {
-        res.status(400).send({ message: 'На сервере произошла ошибка' });
+        res.status(500).send({ message: 'На сервере произошла ошибка' });
       }
     });
 };
@@ -70,12 +68,9 @@ module.exports.dislikeCard = (req, res) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
+    .orFail(new Error('Запрашиваемая карточка не найдена'))
     .then((card) => {
-      if (card === null) {
-        res.status(404).send({ message: 'Запрашиваемая карточка не найдена' });
-      } else {
-        res.send(card);
-      }
+      res.send(card);
     })
-    .catch(() => res.status(400).send({ message: 'На сервере произошла ошибка' }));
+    .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
 };
