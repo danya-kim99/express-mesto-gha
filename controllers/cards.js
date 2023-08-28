@@ -1,7 +1,4 @@
-const mongoose = require('mongoose');
 const Card = require('../models/card');
-
-const isValidFormat = mongoose.Types.ObjectId.isValid;
 
 module.exports.getCards = (req, res) => {
   Card.find({})
@@ -23,17 +20,16 @@ module.exports.createCard = (req, res) => {
 };
 
 module.exports.deleteCard = (req, res) => {
-  if (!isValidFormat(req.params.cardId)) {
-    res.status(400).send({ message: 'Переданный идентификатор карточки некорректен' });
-  }
   Card.findByIdAndRemove(req.params.cardId)
-    .orFail(new Error('Запрашиваемая карточка не найдена'))
+    .orFail(new Error('NonexistentId'))
     .then((card) => {
       res.send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Запрашиваемая карточка не найдена' });
+        res.status(400).send({ message: 'Запрашиваемая карточка не найдена, проверьте формат id' });
+      } else if (err.message === 'NonexistentId') {
+        res.status(404).send({ message: 'Запрашиваемая карточка не найдена' });
       } else {
         res.status(500).send({ message: 'На сервере произошла ошибка' });
       }
@@ -41,21 +37,20 @@ module.exports.deleteCard = (req, res) => {
 };
 
 module.exports.likeCard = (req, res) => {
-  if (!isValidFormat(req.params.cardId)) {
-    res.status(400).send({ message: 'Переданный идентификатор карточки некорректен' });
-  }
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
-    .orFail(new Error('Запрашиваемая карточка не найдена'))
+    .orFail(new Error('NonexistentId'))
     .then((card) => {
       res.send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Запрашиваемая карточка не найдена' });
+        res.status(400).send({ message: 'Запрашиваемая карточка не найдена, проверьте формат id' });
+      } else if (err.message === 'NonexistentId') {
+        res.status(404).send({ message: 'Запрашиваемая карточка не найдена' });
       } else {
         res.status(500).send({ message: 'На сервере произошла ошибка' });
       }
@@ -68,9 +63,17 @@ module.exports.dislikeCard = (req, res) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
-    .orFail(new Error('Запрашиваемая карточка не найдена'))
+    .orFail(new Error('NonexistentId'))
     .then((card) => {
       res.send(card);
     })
-    .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Запрашиваемая карточка не найдена, проверьте формат id' });
+      } else if (err.message === 'NonexistentId') {
+        res.status(404).send({ message: 'Запрашиваемая карточка не найдена' });
+      } else {
+        res.status(500).send({ message: 'На сервере произошла ошибка' });
+      }
+    });
 };
