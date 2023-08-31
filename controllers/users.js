@@ -44,8 +44,12 @@ module.exports.getUser = (req, res, next) => {
 
 module.exports.createUser = (req, res, next) => {
   const {
-    email, password, name, about, avatar
+    email, password, name, about, avatar,
   } = req.body;
+
+  if (!password) {
+    throw new BadRequestError('Невалидные параметры запроса');
+  }
 
   bcrypt.hash(password, 10)
     .then((hash) => User.create({
@@ -113,7 +117,5 @@ module.exports.login = (req, res, next) => {
         httpOnly: true,
       }).send({ token });
     })
-    .catch((err) => {
-      next(err);
-    });
+    .catch(next);
 };
