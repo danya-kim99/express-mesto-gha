@@ -6,8 +6,6 @@ const NoRightsError = require('../errors/no-rights-err');
 const BadRequestError = require('../errors/bad-request-err');
 const AlreadyExistError = require('../errors/already-exist-err');
 
-const { JWT_SECRET } = process.env;
-
 module.exports.getUsers = (req, res, next) => {
   User.find({})
     .then((users) => {
@@ -106,7 +104,7 @@ module.exports.login = (req, res, next) => {
 
   User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, '67bee4de13ac5c802aaa75ceea5f9db72ca74d5836ad4c74eb2f25780ece1a33', { expiresIn: '7d' });
       res.cookie('jwt', token, {
         maxAge: 3600000 * 24 * 7,
         httpOnly: true,
