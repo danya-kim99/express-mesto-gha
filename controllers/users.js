@@ -1,84 +1,107 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const NotFoundError = require('../errors/not-found-err');
+const NoRightsError = require('../errors/no-rights-err');
+const BadRequestError = require('../errors/bad-request-err');
+const AlreadyExistError = require('../errors/already-exist-err');
 
 const { JWT_SECRET } = process.env;
 
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .then((users) => res.send(users))
-    .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
+    .then((users) => {
+      if (!users) {
+        throw new NotFoundError('Пользователи не найдены');
+      }
+      res.send(users);
+    })
+    .catch(next);
 };
 
-module.exports.getMe = (req, res) => {
+module.exports.getMe = (req, res, next) => {
   User.findById(req.user._id)
-    .then((user) => res.send({ name: user.name, about: user.about, avatar: user.avatar }))
-    .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь с данным id не найден');
+      }
+      res.send({ name: user.name, about: user.about, avatar: user.avatar });
+    })
+    .catch(next);
 };
 
-module.exports.getUser = (req, res) => {
+module.exports.getUser = (req, res, next) => {
   User.findById(req.params.userId)
-    .orFail(new Error('NonexistentId'))
+    .orFail(new Error('NonExistentId'))
     .then((user) => res.send(user))
     .catch((err) => {
-      if (err.message === 'NonexistentId') {
-        res.status(404).send({ message: err.message });
+      if (err.message === 'NonExistentId') {
+        throw new NotFoundError('Пользователь с данным id не найден');
       } else if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Запрашиваемый пользователь не найден' });
-      } else {
-        res.status(500).send({ message: 'На сервере произошла ошибка' });
+        throw new BadRequestError('Невалидные параметры запроса');
       }
-    });
+    })
+    .catch(next);
 };
 
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const {
-    email, password, name, about, avatar,
+    email, password,
   } = req.body;
 
-  bcrypt.hash(password, parseInt(5, 10))
+  bcrypt.hash(password, 10)
     .then((hash) => User.create({
       email,
       password: hash,
-      name,
-      about,
-      avatar,
     }))
-    .then((user) => res.status(201).send(user))
+    .then((user) => res.status(201).send({ _id: user._id }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Ошибка валидации' });
-      } else {
-        res.status(500).send({ message: 'На сервере произошла ошибка' });
+        throw new AlreadyExistError('Пользователь с таким email уже существует');
       }
-    });
+    })
+    .catch(next);
 };
 
-module.exports.patchUser = (req, res) => {
+module.exports.patchUser = (req, res, next) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .then((user) => res.send(user))
+    .then((user) => {
+      if (req.user._id === user._id) {
+        res.send({ data: user });
+      } else {
+        throw new NoRightsError('Вы не можете редактировать профиль другого пользователя');
+      }
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Ошибка валидации, неправильный формат параметров' });
-      } else { res.status(500).send({ message: 'На сервере произошла ошибка' }); }
-    });
+        throw new BadRequestError('Невалидные параметры запроса');
+      }
+    })
+    .catch(next);
 };
 
-module.exports.patchAvatar = (req, res) => {
+module.exports.patchAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then((user) => res.send({ avatar: user.avatar }))
+    .then((user) => {
+      if (req.user._id === user._id) {
+        res.send({ avatar: user.avatar });
+      } else {
+        throw new NoRightsError('Вы не можете редактировать профиль другого пользователя');
+      }
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Ошибка валидации, неправильный формат URL' });
-      } else { res.status(500).send({ message: 'На сервере произошла ошибка' }); }
-    });
+        throw new BadRequestError('Ошибка валидации, неправильный формат URL');
+      }
+    })
+    .catch(next);
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
 
   User.findUserByCredentials(email, password)
@@ -90,6 +113,6 @@ module.exports.login = (req, res) => {
       }).send({ token });
     })
     .catch((err) => {
-      res.status(401).send({ message: err.message });
+      next(err);
     });
 };
