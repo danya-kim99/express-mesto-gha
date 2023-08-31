@@ -1,9 +1,18 @@
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+
+const { JWT_SECRET } = process.env;
 
 module.exports.getUsers = (req, res) => {
   User.find({})
     .then((users) => res.send(users))
+    .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
+};
+
+module.exports.getMe = (req, res) => {
+  User.findById(req.user._id)
+    .then((user) => res.send({ name: user.name, about: user.about, avatar: user.avatar }))
     .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
 };
 
@@ -72,11 +81,15 @@ module.exports.patchAvatar = (req, res) => {
 module.exports.login = (req, res) => {
   const { email, password } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then((user) => res.send({ avatar: user.avatar }))
+  User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+      res.cookie('jwt', token, {
+        maxAge: 3600000 * 24 * 7,
+        httpOnly: true,
+      }).send({ token });
+    })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Ошибка валидации, неправильный формат URL' });
-      } else { res.status(500).send({ message: 'На сервере произошла ошибка' }); }
+      res.status(401).send({ message: err.message });
     });
 };
