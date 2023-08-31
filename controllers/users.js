@@ -44,18 +44,21 @@ module.exports.getUser = (req, res, next) => {
 
 module.exports.createUser = (req, res, next) => {
   const {
-    email, password,
+    email, password, name, about, avatar
   } = req.body;
 
   bcrypt.hash(password, 10)
     .then((hash) => User.create({
       email,
       password: hash,
+      name,
+      about,
+      avatar,
     }))
     .then((user) => res.status(201).send({ _id: user._id }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        throw new AlreadyExistError('Пользователь с таким email уже существует');
+        throw new BadRequestError('Невалидные параметры запроса');
       }
     })
     .catch(next);
