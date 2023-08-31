@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
-const uniqueValidator = require('mongoose-unique-validator'); // по какой-то причине из коробки не работало свойство unique, нашёл решение в виде этого плагина - заработало :)
 const UnauthorizedError = require('../errors/unauthorized-err');
 
 const userSchema = new mongoose.Schema(
@@ -37,7 +36,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Поле "avatar" должно быть заполнено'],
       validate: {
-        validator: (v) => validator.isURL(v),
+        validator: (v) => regex.test(v),
         message: 'Некорректный URL',
       },
       default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
@@ -63,7 +62,5 @@ userSchema.statics.findUserByCredentials = function (email, password) {
         });
     });
 };
-
-userSchema.plugin(uniqueValidator);
 
 module.exports = mongoose.model('user', userSchema);
