@@ -31,7 +31,7 @@ module.exports.deleteCard = (req, res, next) => {
       if (req.user._id !== card.owner) {
         throw new NoRightsError('Вы не можете удалять карточки других пользователей');
       } else {
-        Card.findByIdAndRemove(req.params.cardId);
+        return Card.findByIdAndRemove(req.params.cardId);
       }
     })
     .catch((err) => {
@@ -49,15 +49,13 @@ module.exports.likeCard = (req, res, next) => {
     { $addToSet: { likes: req.user._id } },
     { new: true },
   )
-    .orFail(new Error('NonExistentId'))
+    .orFail(new NotFoundError('Запрашиваемая карточка не найдена'))
     .then((card) => {
       res.send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new BadRequestError('Запрашиваемая карточка не найдена, проверьте формат id'));
-      } else if (err.message === 'NonExistentId') {
-        next(new NotFoundError('Запрашиваемая карточка не найдена'));
       } else {
         next(err);
       }
