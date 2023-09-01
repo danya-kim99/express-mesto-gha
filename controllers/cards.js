@@ -25,7 +25,7 @@ module.exports.createCard = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
-    .orFail(new Error('NonExistentId'))
+    .orFail(new NotFoundError('Запрашиваемая карточка не найдена'))
     .then((card) => {
       if (req.user._id !== card.owner) {
         throw new NoRightsError('Вы не можете удалять карточки других пользователей');
@@ -35,12 +35,11 @@ module.exports.deleteCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        throw new BadRequestError('Запрашиваемая карточка не найдена, проверьте формат id');
-      } else if (err.message === 'NonExistentId') {
-        throw new NotFoundError('Запрашиваемая карточка не найдена');
+        next(new BadRequestError('Запрашиваемая карточка не найдена, проверьте формат id'));
+      } else {
+        next(err);
       }
-    })
-    .catch(next);
+    });
 };
 
 module.exports.likeCard = (req, res, next) => {
@@ -55,12 +54,13 @@ module.exports.likeCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        throw new BadRequestError('Запрашиваемая карточка не найдена, проверьте формат id');
+        next(new BadRequestError('Запрашиваемая карточка не найдена, проверьте формат id'));
       } else if (err.message === 'NonExistentId') {
-        throw new NotFoundError('Запрашиваемая карточка не найдена');
+        next(new NotFoundError('Запрашиваемая карточка не найдена'));
+      } else {
+        next(err);
       }
-    })
-    .catch(next);
+    });
 };
 
 module.exports.dislikeCard = (req, res, next) => {
@@ -69,16 +69,15 @@ module.exports.dislikeCard = (req, res, next) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
-    .orFail(new Error('NonExistentId'))
+    .orFail(new NotFoundError('Запрашиваемая карточка не найдена'))
     .then((card) => {
       res.send(card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        throw new BadRequestError('Запрашиваемая карточка не найдена, проверьте формат id');
-      } else if (err.message === 'NonExistentId') {
-        throw new NotFoundError('Запрашиваемая карточка не найдена');
+        next(new BadRequestError('Запрашиваемая карточка не найдена, проверьте формат id'));
+      } else {
+        next(err);
       }
-    })
-    .catch(next);
+    });
 };
