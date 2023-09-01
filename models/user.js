@@ -3,6 +3,8 @@ const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const UnauthorizedError = require('../errors/unauthorized-err');
 
+const regex = /^(http|https):\/\/(www\.)?[a-zA-Z0-9-._~:/?#[\]@!$&'()*+,;=]+#?$/gm;
+
 const userSchema = new mongoose.Schema(
   {
     email: {
@@ -10,7 +12,7 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Поле "email" должно быть заполнено'],
       validate: {
         validator: (v) => validator.isEmail(v),
-        message: 'Некорректный URL',
+        message: 'Некорректный email',
       },
       unique: true,
     },
