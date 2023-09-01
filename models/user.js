@@ -31,7 +31,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       minlength: [2, 'Минимальная длина поля "name" - 2'],
       maxlength: [30, 'Максимальная длина поля "name" - 30'],
-      required: [true, 'Поле "about" должно быть заполнено'],
       default: 'Исследователь',
     },
     avatar: {
@@ -57,7 +56,7 @@ userSchema.statics.findUserByCredentials = function (email, password) {
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-            return Promise.reject(new BadRequestError('Неправильные почта или пароль'));
+            return Promise.reject(new UnautBadRequestErrorhorizedError('Неправильные почта или пароль'));
           }
 
           return user;
