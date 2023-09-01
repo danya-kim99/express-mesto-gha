@@ -4,7 +4,6 @@ const { celebrate, errors, Joi } = require('celebrate');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
-const regex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=+$,\\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=+$,\\w]+@)[A-Za-z0-9.-]+)((?:\/[+~%.\\w_]*)?\\??(?:[-+=&;%@.\\w_]*)#?(?:[\\w]*))?)/;
 
 const regex = require('./utils/regex');
 
