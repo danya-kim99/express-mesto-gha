@@ -58,10 +58,12 @@ module.exports.createUser = (req, res, next) => {
       name,
       about,
       avatar,
-    }))
+    }), { runValidators: true })
     .then((user) => res.status(201).send({ _id: user._id }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err.code === 11000) {
+        throw new AlreadyExistError('Пользователь с таким email уже существует');
+      } else if (err.name === 'ValidationError') {
         throw new BadRequestError('Невалидные параметры запроса');
       }
     })
@@ -73,10 +75,10 @@ module.exports.patchUser = (req, res, next) => {
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => {
-      if (req.user._id === user._id) {
-        res.send({ data: user });
-      } else {
+      if (req.user._id !== user._id) {
         throw new NoRightsError('Вы не можете редактировать профиль другого пользователя');
+      } else {
+        res.send({ data: user });
       }
     })
     .catch((err) => {
@@ -92,10 +94,10 @@ module.exports.patchAvatar = (req, res, next) => {
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
-      if (req.user._id === user._id) {
-        res.send({ avatar: user.avatar });
-      } else {
+      if (req.user._id !== user._id) {
         throw new NoRightsError('Вы не можете редактировать профиль другого пользователя');
+      } else {
+        res.send({ avatar: user.avatar });
       }
     })
     .catch((err) => {

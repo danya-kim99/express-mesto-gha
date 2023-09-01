@@ -27,10 +27,10 @@ module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
     .orFail(new Error('NonExistentId'))
     .then((card) => {
-      if (req.user._id === card.owner) {
-        res.send({ data: card });
-      } else {
+      if (req.user._id !== card.owner) {
         throw new NoRightsError('Вы не можете удалять карточки других пользователей');
+      } else {
+        res.send({ data: card });
       }
     })
     .catch((err) => {
