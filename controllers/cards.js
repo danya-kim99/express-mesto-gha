@@ -17,20 +17,21 @@ module.exports.createCard = (req, res, next) => {
     .then((card) => res.status(201).send({ _id: card._id }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        throw new BadRequestError('Невалидные параметры запроса');
+        next(new BadRequestError('Невалидные параметры запроса'));
+      } else {
+        next(err);
       }
-    })
-    .catch(next);
+    });
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findByIdAndRemove(req.params.cardId)
+  Card.findById(req.params.cardId)
     .orFail(new NotFoundError('Запрашиваемая карточка не найдена'))
     .then((card) => {
       if (req.user._id !== card.owner) {
         throw new NoRightsError('Вы не можете удалять карточки других пользователей');
       } else {
-        res.send({ data: card });
+        Card.findByIdAndRemove(req.params.cardId);
       }
     })
     .catch((err) => {
