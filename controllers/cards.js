@@ -28,10 +28,13 @@ module.exports.deleteCard = (req, res, next) => {
   Card.findById(req.params.cardId)
     .orFail(new NotFoundError('Запрашиваемая карточка не найдена'))
     .then((card) => {
-      if (req.user._id !== card.owner) {
+      if (req.user._id !== card.owner.toString()) {
         throw new NoRightsError('Вы не можете удалять карточки других пользователей');
       } else {
-        return Card.findByIdAndRemove(req.params.cardId);
+        return Card.findByIdAndRemove(req.params.cardId)
+          .then((deletedCard) => {
+            res.send({ message: `Карточка ${deletedCard._id} успешно удалена` });
+          });
       }
     })
     .catch((err) => {
