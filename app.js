@@ -3,6 +3,7 @@ const express = require('express');
 const { celebrate, errors, Joi } = require('celebrate');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
 
 const regex = require('./utils/regex');
 
@@ -20,6 +21,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 mongoose.connect('mongodb://localhost:27017/mestodb');
+
+app.use(requestLogger);
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
@@ -39,6 +42,8 @@ app.post('/signup', celebrate({
 app.use(auth);
 app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
+
+app.use(errorLogger);
 
 app.use((req, res, next) => {
   next(new NotFoundError('Страница не найдена'));
